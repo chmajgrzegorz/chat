@@ -2,14 +2,14 @@ function onLoad(){
     var ws = "ws://localhost:8080/chat"
     websocket = new WebSocket(ws);
     websocket.onopen = function (ev) {
-        onopen(ev)
+        onOpen(ev)
     };
     websocket.onmessage = function (ev) {
-        onmessage(ev);
+        onMessage(ev);
     }
 }
 function onOpen(){
-    console.log("Połączono")
+    console.log("Połączono");
 }
 
 function onMessage(ev){
