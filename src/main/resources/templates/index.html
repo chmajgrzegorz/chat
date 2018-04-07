@@ -4,21 +4,29 @@
     <meta charset="UTF-8">
     <title>Chat</title>
     <link rel="stylesheet" type="text/css" th:href="@{/style.css}">
+    <script type="text/javascript" th:src="@{/chatScript.js}"></script>
 </head>
 <body>
     <section id="wrapper">
-        <h1>Chat</h1>
 
 
         <article>
-            <ul id="messages">
-                <li class="message">Test</li>
-            </ul>
+            <ul id="messages"></ul>
 
-            <form>
+            <hr/>
+
+            <form onsubmit="sendMessage(); return false">
                 <input type="text" id="writer" placeholder="Podaj wiadomość"/>
             </form>
         </article>
     </section>
+
+    <script>
+        messages = document.getElementById("messages"); //wypisywanie wiadomosci
+        writer = document.getElementById("writer"); //przyjmowanie wiadomosci z klawiatury
+        form = writer.form;
+
+        window.addEventListener("load", onLoad, false);
+    </script>
 </body>
 </html>

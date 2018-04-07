@@ -1,8 +1,9 @@
 body{
     margin: 0;
-    margin-top: 20px;
+    margin-top: 40px;
     padding: 0;
-    background: lightslategrey;
+    background: #dcdef1;
+    font: normal 26px/35px  "Calibri";
 
 }
 
@@ -19,8 +20,8 @@ body{
 }
 
 #wrapper{
-    width: 100%;
-    margin: 0 auto;
+    width: 90%;
+    margin: 10px auto;
     background: white;
     border-radius: 10px;
     border-top: 1px solid #fff;
@@ -36,8 +37,4 @@ body{
 #messages li {
     margin: 0;
     padding: 1px 0;
-}
-
-section, h1{
-    display: block;
 }
