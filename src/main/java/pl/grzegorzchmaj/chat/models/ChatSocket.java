@@ -1,5 +1,6 @@
 package pl.grzegorzchmaj.chat.models;
 
+import org.apache.tomcat.jni.User;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -21,6 +22,7 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
 
 
     List<UserChatModel> userList = new ArrayList<>();
+    List<AdminChatModel> adminList = new ArrayList<>();
     List<String> messageList = new ArrayList<>();
 
 
@@ -39,19 +41,30 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
 
         UserChatModel userChatModel = findUserBySessionId(session);
 
-        userChatModel.sendMessage("Witaj na naszym chacie");
-        userChatModel.sendMessage("Wpisz swój nick");
-
         for (String s : messageList) {
             userChatModel.sendMessage(s);
         }
+
+        userChatModel.sendMessage("Witaj na naszym chacie");
+        userChatModel.sendMessage("Wpisz swój nick");
+
+
 
 
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+
         UserChatModel userChatModel = findUserBySessionId(session);
+        System.out.println(userChatModel);
+
+        if(userList.stream().filter(s -> s instanceof AdminChatModel ).findAny().isPresent()){
+            userChatModel = userList.stream().filter(s -> s instanceof AdminChatModel).findAny().get();
+            System.out.println(userChatModel);
+        }
+
+
         if(message.getPayloadLength() == 0){
             userChatModel.sendMessage("Wpisz cokolwiek!");
             return;
@@ -62,15 +75,34 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
                 userChatModel.sendMessage("Nick jest zajęty");
                 userChatModel.sendMessage("Wpisz swój nick");
             }
+            else if(message.getPayload().equals("admin")){
+                   userChatModel.setNickname(message.getPayload());
+                userChatModel.sendMessage("Wpisz haslo");
+                return;
+            }
             else{
                 userChatModel.setNickname(message.getPayload());
                 userChatModel.sendMessage("Ustawiono Twój nick!");
             }
-
             return;
         }
 
-
+        else if(userChatModel.getNickname().equals("admin")){
+            if(message.getPayload().equals("password")) {
+                AdminChatModel adminChatModel = new AdminChatModel(userChatModel.getSession(), "ADMIN", message.getPayload());
+                System.out.println(adminChatModel + "Sorawdzenie");
+                userList.remove(findUserBySessionId(session));
+                userList.add(adminChatModel);
+                adminChatModel.sendMessage("Zalogowano admina");
+                return;
+            }
+            else {
+                userChatModel.sendMessage("Podałeś złe hasło");
+                userChatModel.sendMessage("Wpisz swój nick");
+                userList.remove(findUserBySessionId(session));
+                userList.add(new UserChatModel(session));
+            }
+        }
 
         if(userChatModel.getCounter() == 0) {
             userChatModel.setTime(System.currentTimeMillis());
@@ -117,10 +149,12 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
         return userList.stream().filter(s -> s.getSession().equals(session)).findAny().get();
     }
 
+    private AdminChatModel findAdminBySessionId(WebSocketSession session){
+        return adminList.stream().filter(s -> s.getSession().equals(session)).findAny().get();
+    }
+
     private List<String> getNicknames(){
         return userList.stream().map(s -> s.getNickname()).collect(Collectors.toList());
     }
-
-    
 
 }
