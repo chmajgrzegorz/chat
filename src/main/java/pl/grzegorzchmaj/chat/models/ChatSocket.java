@@ -1,6 +1,7 @@
 package pl.grzegorzchmaj.chat.models;
 
 import org.apache.tomcat.jni.User;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -9,10 +10,11 @@ import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import pl.grzegorzchmaj.chat.services.AdminListService;
+import pl.grzegorzchmaj.chat.services.MessageListService;
+import pl.grzegorzchmaj.chat.services.UserListService;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,9 +23,15 @@ import java.util.stream.Collectors;
 public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigurer {
 
 
-    List<UserChatModel> userList = new ArrayList<>();
-    List<AdminChatModel> adminList = new ArrayList<>();
-    List<String> messageList = new ArrayList<>();
+
+    @Autowired
+    UserListService userListService;
+
+    @Autowired
+    AdminListService adminListService;
+
+    @Autowired
+    MessageListService messageListService;
 
 
 
@@ -37,11 +45,11 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
 
-        userList.add(new UserChatModel(session));
+        userListService.addUserToList(new UserChatModel(session));
 
-        UserChatModel userChatModel = findUserBySessionId(session);
+        UserChatModel userChatModel = userListService.findUserBySessionId(session);
 
-        for (String s : messageList) {
+        for (String s : messageListService.getMessageList()) {
             userChatModel.sendMessage(s);
         }
 
@@ -56,11 +64,11 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
 
-        UserChatModel userChatModel = findUserBySessionId(session);
+        UserChatModel userChatModel = userListService.findUserBySessionId(session);
         System.out.println(userChatModel);
 
-        if(userList.stream().filter(s -> s instanceof AdminChatModel ).findAny().isPresent()){
-            userChatModel = userList.stream().filter(s -> s instanceof AdminChatModel).findAny().get();
+        if(userListService.getUserList().stream().filter(s -> s instanceof AdminChatModel ).findAny().isPresent()){
+            userChatModel = userListService.getUserList().stream().filter(s -> s instanceof AdminChatModel).findAny().get();
             System.out.println(userChatModel);
         }
 
@@ -71,7 +79,7 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
         }
 
         if(userChatModel.getNickname() == null) {
-            if(getNicknames().contains(message.getPayload())){
+            if(userListService.getNicknames().contains(message.getPayload())){
                 userChatModel.sendMessage("Nick jest zajęty");
                 userChatModel.sendMessage("Wpisz swój nick");
             }
@@ -91,16 +99,16 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
             if(message.getPayload().equals("password")) {
                 AdminChatModel adminChatModel = new AdminChatModel(userChatModel.getSession(), "ADMIN", message.getPayload());
                 System.out.println(adminChatModel + "Sorawdzenie");
-                userList.remove(findUserBySessionId(session));
-                userList.add(adminChatModel);
+                userListService.getUserList().remove(userListService.findUserBySessionId(session));
+                userListService.getUserList().add(adminChatModel);
                 adminChatModel.sendMessage("Zalogowano admina");
                 return;
             }
             else {
                 userChatModel.sendMessage("Podałeś złe hasło");
                 userChatModel.sendMessage("Wpisz swój nick");
-                userList.remove(findUserBySessionId(session));
-                userList.add(new UserChatModel(session));
+                userListService.removeUser(userListService.findUserBySessionId(session));
+                userListService.addUserToList(new UserChatModel(session));
             }
         }
 
@@ -122,39 +130,28 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
         }
 
 
-        if(messageList.size() == 30){
-            messageList.remove(0);
-            messageList.add(userChatModel.getNickname() + ": " + message.getPayload());
+        if(messageListService.getMessageList().size() == 30){
+            messageListService.removeMessage(0);
+            messageListService.addMessage(userChatModel.getNickname() + ": " + message.getPayload());
             sendMessageToAll(userChatModel.getNickname() + ": " + message.getPayload());
             return;
         }
-        messageList.add(userChatModel.getNickname() + ": " + message.getPayload());
+        messageListService.addMessage(userChatModel.getNickname() + ": " + message.getPayload());
         sendMessageToAll(userChatModel.getNickname() + ": " + message.getPayload());
     }
 
 
 
     private void sendMessageToAll(String message) throws IOException {
-        for (UserChatModel userChatModel : userList) {
+        for (UserChatModel userChatModel : userListService.getUserList()) {
             userChatModel.sendMessage(message);
         }
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        userList.remove(findUserBySessionId(session));
+        userListService.removeUser(userListService.findUserBySessionId(session));
     }
 
-    private UserChatModel findUserBySessionId(WebSocketSession session){
-        return userList.stream().filter(s -> s.getSession().equals(session)).findAny().get();
-    }
-
-    private AdminChatModel findAdminBySessionId(WebSocketSession session){
-        return adminList.stream().filter(s -> s.getSession().equals(session)).findAny().get();
-    }
-
-    private List<String> getNicknames(){
-        return userList.stream().map(s -> s.getNickname()).collect(Collectors.toList());
-    }
 
 }
