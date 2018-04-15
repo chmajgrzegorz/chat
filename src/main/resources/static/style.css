@@ -29,7 +29,7 @@ body{
 
 #messages {
     overflow: auto;
-    max-height: 100px;
+    height: 600px;
     list-style: none;
     padding: 0;
 }
