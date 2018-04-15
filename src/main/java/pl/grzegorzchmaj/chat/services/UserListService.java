@@ -7,6 +7,7 @@ import pl.grzegorzchmaj.chat.models.UserChatModel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,12 +23,12 @@ public class UserListService {
         userList.add(userChatModel);
     }
 
-    public UserChatModel findUserBySessionId(WebSocketSession session){
-        return userList.stream().filter(s -> s.getSession().equals(session)).findAny().get();
+    public Optional<UserChatModel> findUserBySessionId(WebSocketSession session){
+        return userList.stream().filter(s -> s.getSession().equals(session)).findAny();
     }
 
-    public UserChatModel findUserByNickname(String nickname){
-        return userList.stream().filter(s -> s.getNickname().equals(nickname)).findAny().get();
+    public Optional<UserChatModel> findUserByNickname(String nickname){
+        return userList.stream().filter(s -> s.getNickname().equals(nickname)).findAny();
     }
 
     public void removeUser(UserChatModel userChatModel){

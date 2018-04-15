@@ -1,24 +1,33 @@
 package pl.grzegorzchmaj.chat.models;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
+import java.time.LocalTime;
 
-//@Data
-//@NoArgsConstructor
 public class UserChatModel {
 
     private WebSocketSession session;
     private String nickname;
     private int counter;
     private long time;
+    private boolean isBanned = false;
+    private LocalTime kickedTime;
 
     public UserChatModel(WebSocketSession session) {
         this.session = session;
         this.counter = 0;
+        this.kickedTime = LocalTime.now().minusMinutes(1);
+    }
+
+    public LocalTime getKickedTime() {
+        return kickedTime;
+    }
+
+    public void setKickedTime(LocalTime kickedTime) {
+        this.kickedTime = kickedTime;
     }
 
     public UserChatModel(String nickname) {
@@ -32,9 +41,19 @@ public class UserChatModel {
     public UserChatModel(WebSocketSession session, String nickname) {
         this.session = session;
         this.nickname = nickname;
+        this.counter = 0;
+        this.kickedTime = LocalTime.now().minusMinutes(1);
     }
 
     public UserChatModel() {
+    }
+
+    public boolean isBanned() {
+        return isBanned;
+    }
+
+    public void setBanned(boolean banned) {
+        isBanned = banned;
     }
 
     public WebSocketSession getSession() {
@@ -78,4 +97,7 @@ public class UserChatModel {
                 ", time=" + time +
                 '}';
     }
+
+
+
 }
